@@ -14,6 +14,7 @@ struct CPLookupView: View {
     @State private var phoneNumber: String = ""
     @State private var searchResults: [PhoneNumberDBResult] = []
     @State private var isValidNumber: Bool? = nil
+    @State private var showWelcomeMessage = true
     private let phoneNumberUtility = PhoneNumberUtility()
     private var dbHelper = DatabaseHelper()
     @State private var debounceCancellable: AnyCancellable?
@@ -33,7 +34,7 @@ struct CPLookupView: View {
     var body: some View {
         VStack(spacing: 10) {
             HStack {
-                TextFieldWithDoneButton(text: $phoneNumber, placeholder: "Enter Phone Number", isNumeric: true) // Updated with custom TextField
+                TextFieldWithDoneButton(text: $phoneNumber, placeholder: "Enter Phone Number", isNumeric: true)
                     .padding(10)
                     .background(isValidNumber == false ? Color.red.opacity(0.1) : Color(.systemGray6))
                     .cornerRadius(8)
@@ -45,6 +46,7 @@ struct CPLookupView: View {
                                     phoneNumber = ""
                                     isValidNumber = nil
                                     searchResults = []
+                                    showWelcomeMessage = true
                                 }) {
                                     Image(systemName: "xmark.circle.fill")
                                         .foregroundColor(.gray)
@@ -54,57 +56,80 @@ struct CPLookupView: View {
                         }
                     )
                     .onChange(of: phoneNumber) {
+                        if !phoneNumber.isEmpty {
+                            showWelcomeMessage = false
+                        }
                         debounceTextInput(phoneNumber)
                     }
             }
             .padding()
-            
-            if let isValid = isValidNumber {
-                Text(isValid ? "Valid UK Phone Number" : "Invalid Phone Number")
-                    .foregroundColor(isValid ? .green : .red)
-                    .font(.caption)
-                    .padding(.top, -8)
-            }
-            
-            List(searchResults, id: \.prefix) { result in
-                VStack(spacing: 5) {
-                    Text(result.cp)
-                        .font(.title2)
+
+            if showWelcomeMessage {
+                Spacer()
+                VStack(spacing: 8) {
+                    Text("Telco.Tools Lookup")
+                        .font(.title)
                         .bold()
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.top, 5)
-                    
-                    HStack {
-                        Text("Prefix: ")
-                        Text("+44" + result.prefix)
-                            .bold()
-                        .padding(.top, 5)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    
-                    HStack {
-                        Text("Status: ")
-                        Text(result.status)
-                            .bold()
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    
-                    if let description = statusDescriptions[result.status], !description.isEmpty {
-                        Text(description)
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
-                            .multilineTextAlignment(.leading)
-                            .padding(.top, 5)
-                    }
+                        .multilineTextAlignment(.center)
+                    Text("""
+                        Welcome, to begin, type the UK phone number you wish to lookup in the box above, or select one of the other tabs below.
+                        
+                        You can enter phone numbers in standard UK format (01234567890), or in E.164 format (441234567890). If you receive an invalid number message and you are sure it is correct, please raise a bug in our Github.
+                        """)
+                        .font(.body)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
                 }
                 .padding()
-                .background(result.status == "Allocated" ? Color.clear : Color.yellow.opacity(0.2))
-                .cornerRadius(8)
+                Spacer()
+            } else {
+                if let isValid = isValidNumber {
+                    Text(isValid ? "Valid UK Phone Number" : "Invalid Phone Number")
+                        .foregroundColor(isValid ? .green : .red)
+                        .font(.caption)
+                        .padding(.top, -8)
+                }
+                
+                List(searchResults, id: \.prefix) { result in
+                    VStack(spacing: 5) {
+                        Text(result.cp)
+                            .font(.title2)
+                            .bold()
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.top, 5)
+                        
+                        HStack {
+                            Text("Prefix: ")
+                            Text("+44" + result.prefix)
+                                .bold()
+                            .padding(.top, 5)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        HStack {
+                            Text("Status: ")
+                            Text(result.status)
+                                .bold()
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        if let description = statusDescriptions[result.status], !description.isEmpty {
+                            Text(description)
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                                .multilineTextAlignment(.leading)
+                                .padding(.top, 5)
+                        }
+                    }
+                    .padding()
+                    .background(result.status == "Allocated" ? Color.clear : Color.yellow.opacity(0.2))
+                    .cornerRadius(8)
+                }
+                .listStyle(PlainListStyle())
             }
-            .listStyle(PlainListStyle())
         }
         .navigationTitle("CP Lookup")
-        .animation(.easeInOut, value: isValidNumber)
+        .animation(.easeInOut, value: showWelcomeMessage)
     }
 
     private func debounceTextInput(_ newValue: String) {
