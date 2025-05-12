@@ -17,3 +17,7 @@ Privacy and Security:
 
 * We respect your privacy and do not collect any personal data.
 * Our app does not make any calls to third-party APIs, all information is stored locally on your device.
+
+App Store:
+
+https://apps.apple.com/gb/app/telcotools-lookup/id6736761952
